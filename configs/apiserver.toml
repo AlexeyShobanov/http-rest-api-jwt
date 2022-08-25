@@ -1,0 +1,5 @@
+bind_addr = ":8080"
+log_level = "debug"
+
+[store]
+database_url = "host=localhost port=15432 dbname=heagotest user=testgouser password=pgpwd4gotest sslmode=disable"
