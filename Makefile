@@ -12,7 +12,7 @@ migup:
 
 .PHONY: migdown
 migdown:
-	migrate -path migrations -database "postgres://localhost:25432/test?user=test&password=test&sslmode=disable" down
+	migrate -path migrations -database "postgres://localhost:25432/test?user=test&password=test&sslmode=disable" down -all
 
 .PHONY: pgstop
 pgstop:
@@ -21,6 +21,8 @@ pgstop:
 
 .PHONY: test
 test:
+	migrate -path migrations -database "postgres://localhost:25432/test?user=test&password=test&sslmode=disable" down -all
+	migrate -path migrations -database "postgres://localhost:25432/test?user=test&password=test&sslmode=disable" up
 	go test -v -race -timeout 30s ./...
 
 .DEFAULT_GOAL :=build

@@ -1,5 +1,5 @@
 // здесь создается (конфигурируется) datanaseURL
-package store_test
+package sqlstore_test
 
 import (
 	"os"
