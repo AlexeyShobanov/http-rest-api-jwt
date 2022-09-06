@@ -25,4 +25,8 @@ test:
 	migrate -path migrations -database "postgres://localhost:25432/test?user=test&password=test&sslmode=disable" up
 	go test -v -race -timeout 30s ./...
 
+.PHONY: db
+db:
+	docker-compose up
+
 .DEFAULT_GOAL :=build

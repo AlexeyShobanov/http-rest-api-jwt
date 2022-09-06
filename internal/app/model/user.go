@@ -9,10 +9,10 @@ import (
 
 // структура описывающая модель
 type User struct {
-	ID                int
-	Email             string
-	Password          string
-	EncryptedPassword string
+	ID                int    `json:"id"`
+	Email             string `json:"email"`
+	Password          string `json:"password,omitempty"` // omitempty если пароль, то этот ключ не возвращается
+	EncryptedPassword string `json:"-"`                  // этот ключ вообще не рендерится в json
 }
 
 func (u *User) Validate() error {
@@ -35,6 +35,16 @@ func (u *User) BeforCreate() error {
 	}
 
 	return nil
+}
+
+// сравнение пароля с зашифрованным паролем
+func (u *User) ComparePassword(password string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(u.EncryptedPassword), []byte(password)) == nil
+}
+
+// функция будет затирать те атрибуты, которые считаются приватными
+func (u *User) Sanitize() {
+	u.Password = ""
 }
 
 func encryptString(s string) (string, error) {
