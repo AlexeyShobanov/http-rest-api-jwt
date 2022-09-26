@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/ash/http-rest-api/internal/app/model"
@@ -52,6 +53,19 @@ func newServer(store store.Store, sessionStore sessions.Store) *server {
 	return s
 }
 
+func (s *server) configureLogger(l string, file *os.File) {
+	level, err := logrus.ParseLevel(l)
+	if err != nil {
+		s.logger.Fatal(err)
+	}
+
+	s.logger.SetLevel(level)
+
+	s.logger.Formatter = &logrus.JSONFormatter{}
+	s.logger.SetOutput(os.Stdout)
+	s.logger.SetOutput(file)
+}
+
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
 }
@@ -63,6 +77,8 @@ func (s *server) configureRouter() {
 	s.router.Use(s.logRequest)
 	// вызываем мидлвару CORS для всех роутов
 	s.router.Use(handlers.CORS(handlers.AllowedOrigins([]string{"*"})))
+
+	// стандартные роуты
 	s.router.HandleFunc("/users", s.handleUsersCreate()).Methods("POST")
 	s.router.HandleFunc("/sessions", s.handleSessionsCreate()).Methods("POST")
 

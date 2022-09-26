@@ -18,12 +18,13 @@ func init() {
 func main() {
 	flag.Parse() //  парсим флаги в связанные переменные
 
-	config := apiserver.NewConfig()
-	_, err := toml.DecodeFile(configPath, config) // (toml-файл с конфигом, переменная куда записать данные из файла)
+	config := apiserver.NewConfig()               // создаем переменную config (с некоторыми значениями по умолчанию)
+	_, err := toml.DecodeFile(configPath, config) // (декодируем toml-файл с конфигом и записываем его в переменную config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// стартуем сервер
 	if err := apiserver.Start(config); err != nil {
 		log.Fatal(err)
 	}
