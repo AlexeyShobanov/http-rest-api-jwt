@@ -11,7 +11,7 @@ import (
 type User struct {
 	ID                int    `json:"id"`
 	Email             string `json:"email"`
-	Password          string `json:"password,omitempty"` // omitempty если пароль, то этот ключ не возвращается
+	Password          string `json:"password,omitempty"` // omitempty если пароль пустой, то этот ключ не возвращается
 	EncryptedPassword string `json:"-"`                  // этот ключ вообще не рендерится в json
 }
 
