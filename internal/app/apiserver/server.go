@@ -7,20 +7,20 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ash/http-rest-api/internal/app/model"
 	"github.com/ash/http-rest-api/internal/app/store"
+	pkg "github.com/ash/http-rest-api/pkg/jwt"
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	sessionName        = "mySession"
-	ctxKeyUser  ctxKey = iota
+	ctxKeyUser ctxKey = iota
 	ctxKeyRequestID
 )
 
@@ -34,18 +34,18 @@ var (
 type ctxKey int8
 
 type server struct {
-	logger       *logrus.Logger
-	router       *mux.Router
-	store        store.Store
-	sessionStore sessions.Store
+	logger   *logrus.Logger
+	router   *mux.Router
+	store    store.Store
+	jwtToken *pkg.ConfToken
 }
 
-func newServer(store store.Store, sessionStore sessions.Store) *server {
+func newServer(store store.Store, ct *pkg.ConfToken) *server {
 	s := &server{
-		router:       mux.NewRouter(),
-		logger:       logrus.New(),
-		store:        store,
-		sessionStore: sessionStore,
+		router:   mux.NewRouter(),
+		logger:   logrus.New(),
+		store:    store,
+		jwtToken: ct,
 	}
 
 	s.configureRouter()
@@ -124,19 +124,31 @@ func (s *server) logRequest(next http.Handler) http.Handler {
 
 func (s *server) authenticateUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, err := s.sessionStore.Get(r, sessionName) // получаем сессию
-		if err != nil {
-			s.error(w, r, http.StatusInternalServerError, err)
-			return
-		}
-
-		id, ok := session.Values["user_id"]
-		if !ok {
+		authHeader := r.Header["Authorization"]
+		if authHeader == nil {
 			s.error(w, r, http.StatusUnauthorized, errNotAuthenticated)
 			return
 		}
 
-		u, err := s.store.User().Find(id.(int))
+		headerParts := strings.Split(authHeader[0], " ")
+
+		if len(headerParts) != 2 {
+			s.error(w, r, http.StatusUnauthorized, errNotAuthenticated)
+			return
+		}
+
+		if headerParts[0] != "Bearer" {
+			s.error(w, r, http.StatusUnauthorized, errNotAuthenticated)
+			return
+		}
+
+		id, err := s.jwtToken.ParseToken(headerParts[1])
+		if err != nil {
+			s.error(w, r, http.StatusUnauthorized, errNotAuthenticated)
+			return
+		}
+
+		u, err := s.store.User().Find(id)
 		if err != nil {
 			s.error(w, r, http.StatusUnauthorized, errNotAuthenticated)
 			return
@@ -200,19 +212,14 @@ func (s *server) handleSessionsCreate() http.HandlerFunc {
 			return
 		}
 
-		// стартуем сессию
-		session, err := s.sessionStore.Get(r, sessionName)
+		// создаем токен jwt
+		token, err := s.jwtToken.GenerateToken(u.ID)
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		session.Values["user_id"] = u.ID
-		if err := s.sessionStore.Save(r, w, session); err != nil {
-			s.error(w, r, http.StatusInternalServerError, err)
-			return
-		}
 
-		s.respond(w, r, http.StatusOK, nil)
+		s.respond(w, r, http.StatusOK, token)
 	}
 }
 

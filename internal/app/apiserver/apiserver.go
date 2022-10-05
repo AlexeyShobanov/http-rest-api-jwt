@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/ash/http-rest-api/internal/app/store/sqlstore"
-	"github.com/gorilla/sessions"
+	pkg "github.com/ash/http-rest-api/pkg/jwt"
 )
 
 func Start(config *Config) error {
@@ -18,8 +18,8 @@ func Start(config *Config) error {
 	defer db.Close()
 
 	store := sqlstore.New(db)
-	sessionStore := sessions.NewCookieStore([]byte(config.SessionKey))
-	srv := newServer(store, sessionStore)
+	confToken := pkg.Init(config.ConfTokenPath)
+	srv := newServer(store, confToken)
 
 	file, err := os.OpenFile(config.LogPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
 	if err != nil {

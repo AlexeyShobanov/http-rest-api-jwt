@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"log"
 
 	"github.com/BurntSushi/toml"
 	"github.com/ash/http-rest-api/internal/app/apiserver"
+	"github.com/sirupsen/logrus"
 )
 
 var configPath string
@@ -21,11 +21,11 @@ func main() {
 	config := apiserver.NewConfig()               // создаем переменную config (с некоторыми значениями по умолчанию)
 	_, err := toml.DecodeFile(configPath, config) // (декодируем toml-файл с конфигом и записываем его в переменную config)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	// стартуем сервер
 	if err := apiserver.Start(config); err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 }
